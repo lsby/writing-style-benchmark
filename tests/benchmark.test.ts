@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { 作者 as 作者枚举 } from '../src/engine/data/authors.js'
 import { 加载数据集 } from '../src/engine/data/dataset.js'
 import { 单题评分格式, 构造评分消息 } from '../src/engine/evaluation/scoring.js'
+import { 构造参考文本 } from '../src/implementations/base.js'
 import { 全文实现 } from '../src/implementations/full-context/index.js'
 import 等待题 from '../src/questions/article/W01.js'
 import { 统计正文字数 } from '../src/questions/question.js'
@@ -25,7 +26,7 @@ await test('作者资料只含姓名和分篇文章，写作与评分各自组�
   let 作者 = 资料集.authors[0]
   assert.ok(作者 !== undefined)
   let 题目 = 等待题.导出()
-  let 参考文本 = new 全文实现().获取参考文本(等待题.出题(作者))
+  let 参考文本 = 构造参考文本(作者.姓名, new 全文实现().获取参考文本(等待题.出题(作者)))
   assert.equal(typeof 参考文本, 'string')
   assert.equal(参考文本.includes(题目.input), false)
   assert.ok(参考文本.includes(作者.姓名))

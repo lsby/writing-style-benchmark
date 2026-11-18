@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto'
 import { z } from 'zod'
 import { 参考实现, type 参考输入 } from '../base.js'
 import { 切分句子 } from '../sentence.js'
@@ -34,6 +35,11 @@ export class 随机抽句实现 extends 参考实现 {
   public constructor(配置: 随机抽句配置) {
     super()
     this.配置 = 配置格式.parse(配置)
+    this.配置.随机种子 ??= randomInt(0, 4_294_967_296)
+  }
+
+  public override 导出配置(): Record<string, unknown> {
+    return { sampleCount: this.配置.抽取数量, seed: this.配置.随机种子 }
   }
 
   public 获取参考文本(输入: 参考输入): string {

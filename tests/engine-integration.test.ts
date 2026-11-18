@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
@@ -6,6 +7,7 @@ import path from 'node:path'
 import { test } from 'node:test'
 import { z } from 'zod'
 import { 作者, 全文实现, 写作题目, 参考实现, 测试引擎, type 参考输入 } from '../src/engine/index.js'
+import { 构造参考文本 } from '../src/implementations/base.js'
 
 class 异步参考实现 extends 参考实现 {
   public readonly 名称 = 'async-reference'
@@ -121,13 +123,17 @@ await test('API 顺序作答评分并直接生成独立基线，两份 API 配�
     assert.ok(用户消息 !== undefined)
     assert.equal(用户消息.content.includes('独有参考片段：纸页边缘的一点光。'), true)
     assert.equal(用户消息.content.includes(题.导出().input), true)
+    assert.equal(用户消息.content.split('参考作者：朱光潜').length - 1, 1)
     assert.equal(JSON.stringify(评分请求.body.messages).includes('独有参考片段'), false)
     assert.ok(JSON.stringify(评分请求.body.messages).includes('书页里的光'))
     assert.equal(await readFile(path.join(项.目录, 'output.txt'), 'utf8'), '题目\n书页里的光慢慢落下来。')
     assert.deepEqual(JSON.parse(await readFile(path.join(项.目录, 'evaluation.json'), 'utf8')), 评分)
     let 文件们 = ['evaluation.json', 'metadata.json', 'output.txt', 'question.json', 'reference.txt']
     assert.deepEqual((await readdir(项.目录)).sort(), 文件们)
-    assert.equal(await readFile(path.join(项.目录, 'reference.txt'), 'utf8'), ' \n独有参考片段：纸页边缘的一点光。 \n')
+    assert.equal(
+      await readFile(path.join(项.目录, 'reference.txt'), 'utf8'),
+      构造参考文本('朱光潜', ' \n独有参考片段：纸页边缘的一点光。 \n'),
+    )
     assert.deepEqual(JSON.parse(await readFile(path.join(项.目录, 'question.json'), 'utf8')), 题.导出())
     let 调用格式 = z.object({
       address: z.string(),
@@ -141,6 +147,19 @@ await test('API 顺序作答评分并直接生成独立基线，两份 API 配�
     })
     let 元信息 = z
       .object({
+        provenance: z.object({
+          code: z.object({
+            commit: z.string().nullable(),
+            dirty: z.boolean().nullable(),
+            sha256: z.string().length(64),
+          }),
+          datasetSha256: z.string().length(64),
+          scoringSourceSha256: z.string().length(64),
+          implementationConfig: z.null(),
+        }),
+        writerMessagesSha256: z.string().length(64),
+        judgeMessagesSha256: z.string().length(64),
+        judgeSchemaSha256: z.string().length(64),
         status: z.literal('complete'),
         author: z.literal('朱光潜'),
         implementation: z.literal('async-reference'),
@@ -154,6 +173,14 @@ await test('API 顺序作答评分并直接生成独立基线，两份 API 配�
         checks: z.object({ passed: z.boolean(), characterCount: z.number(), issues: z.array(z.string()) }).strict(),
       })
       .parse(JSON.parse(await readFile(path.join(项.目录, 'metadata.json'), 'utf8')))
+    assert.equal(
+      元信息.writerMessagesSha256,
+      createHash('sha256').update(JSON.stringify(答题请求.body.messages)).digest('hex'),
+    )
+    assert.equal(
+      元信息.judgeMessagesSha256,
+      createHash('sha256').update(JSON.stringify(评分请求.body.messages)).digest('hex'),
+    )
     assert.equal(String(元信息.unixTimestamp), path.basename(项.目录))
     assert.equal(元信息.writer.address, `${端点}/writer`)
     assert.equal(元信息.judge.address, `${端点}/judge/v1`)

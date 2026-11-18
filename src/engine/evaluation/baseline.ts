@@ -4,6 +4,7 @@ import type { 检查结果 } from '../../questions/question.js'
 import type { 作者姓名 } from '../data/authors.js'
 import type { 题目数据 } from '../data/dataset.js'
 import type { API配置, 调用结果 } from '../execution/model.js'
+import type { 复现信息 } from './provenance.js'
 import type { 单题评分 } from './scoring.js'
 
 export type 基线记录 = {
@@ -16,6 +17,10 @@ export type 基线记录 = {
   答题API: API配置
   评分API: API配置
   状态: 'running' | 'complete' | 'failed'
+  复现?: 复现信息
+  答题消息指纹?: string
+  评分消息指纹?: string
+  评分格式指纹?: string
   参考文本?: string
   作答?: 调用结果
   评分调用?: 调用结果
@@ -52,6 +57,10 @@ export async function 保存结果(记录: 基线记录): Promise<void> {
     id: 记录.编号,
     author: 记录.作者,
     implementation: 记录.实现,
+    provenance: 记录.复现 ?? null,
+    writerMessagesSha256: 记录.答题消息指纹 ?? null,
+    judgeMessagesSha256: 记录.评分消息指纹 ?? null,
+    judgeSchemaSha256: 记录.评分格式指纹 ?? null,
     questionId: 记录.题目.id,
     unixTimestamp: 记录.时间戳,
     timestampUnit: 'milliseconds',

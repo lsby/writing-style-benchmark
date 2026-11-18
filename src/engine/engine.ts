@@ -1,11 +1,12 @@
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { 参考实现 } from '../implementations/base.js'
+import { 构造参考文本, type 参考实现 } from '../implementations/base.js'
 import type { 写作题目 } from '../questions/question.js'
 import type { 作者姓名 } from './data/authors.js'
 import { 加载数据集 } from './data/dataset.js'
 import { 保存结果, type 基线记录 } from './evaluation/baseline.js'
+import { 收集复现信息, 计算指纹 } from './evaluation/provenance.js'
 import { 单题评分格式, 导出JSON格式, 构造评分消息 } from './evaluation/scoring.js'
 import { 检查API配置, 调用模型, type API配置, type 模型消息 } from './execution/model.js'
 
@@ -32,6 +33,7 @@ export class 测试引擎 {
     if (配置.题目.length === 0 || 配置.作者.length === 0) throw new Error('至少选择一位作者和一道题')
     let 根目录 = 配置.仓库目录 ?? fileURLToPath(new URL('../../', import.meta.url))
     let 数据 = await 加载数据集(根目录)
+    let 复现 = await 收集复现信息(数据, 配置.实现)
     let 作者们 = 配置.作者.map((名字) => {
       let 作者 = 数据.authors.find((项) => 项.姓名 === 名字)
       if (作者 === undefined) throw new Error(`未知作者：${名字}`)
@@ -58,10 +60,11 @@ export class 测试引擎 {
           答题API,
           评分API,
           状态: 'running',
+          复现,
         }
         await 保存结果(记录)
         try {
-          记录.参考文本 = await 配置.实现.获取参考文本(题.出题(作者))
+          记录.参考文本 = 构造参考文本(作者.姓名, await 配置.实现.获取参考文本(题.出题(作者)))
           await 保存结果(记录)
           let 消息: 模型消息[] = [
             {
@@ -71,11 +74,17 @@ export class 测试引擎 {
             },
             { role: 'user', content: `${记录.参考文本}\n\n【本题要求】\n${题.导出().input}` },
           ]
+          记录.答题消息指纹 = 计算指纹(消息)
+          await 保存结果(记录)
           记录.作答 = await 调用模型(答题API, 消息)
           记录.检查 = 题.检查(记录.作答.text)
           await 保存结果(记录)
           let 评分消息 = 构造评分消息(作者, 题.导出(), 记录.作答.text, 记录.检查.字数, 记录.作答.finishReason)
-          记录.评分调用 = await 调用模型(评分API, 评分消息, 导出JSON格式(单题评分格式))
+          let 评分格式 = 导出JSON格式(单题评分格式)
+          记录.评分消息指纹 = 计算指纹(评分消息)
+          记录.评分格式指纹 = 计算指纹(评分格式)
+          await 保存结果(记录)
+          记录.评分调用 = await 调用模型(评分API, 评分消息, 评分格式)
           记录.评分 = 单题评分格式.parse(JSON.parse(记录.评分调用.text))
           记录.状态 = 'complete'
           await 保存结果(记录)

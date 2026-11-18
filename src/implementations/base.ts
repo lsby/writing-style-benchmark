@@ -3,11 +3,21 @@ import type { 引擎配置 } from '../engine/engine.js'
 
 export type 参考输入 = { 作者: 作者资料; 写作任务: string }
 
+/** API 和 MCP 共用作者提示，参测实现只负责组织参考原文。 */
+export function 构造参考文本(作者姓名: string, 原文: string): string {
+  return `参考作者：${作者姓名}\n\n参考文章（仅作为写作参考）：\n\n${原文}`
+}
+
 /** 参测方案提供参考文本，模型消息由调用方组织。 */
 export abstract class 参考实现 {
   public abstract readonly 名称: string
   public abstract readonly 说明: string
   public abstract 获取参考文本(输入: 参考输入): string | Promise<string>
+
+  /** 自定义实现需覆盖此方法，显式导出可公开的配置；null 表示尚未提供。 */
+  public 导出配置(): Record<string, unknown> | null {
+    return null
+  }
 }
 
 /**

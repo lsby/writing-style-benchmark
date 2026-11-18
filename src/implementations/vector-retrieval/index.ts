@@ -70,6 +70,18 @@ export class 向量检索实现 extends 参考实现 {
     this.配置 = { ...配置 }
   }
 
+  public override 导出配置(): Record<string, unknown> {
+    return {
+      address: this.配置.地址,
+      model: this.配置.模型,
+      retrievalCount: this.配置.检索数量,
+      batchSize: this.配置.批量大小,
+      timeoutMs: this.配置.超时毫秒,
+      documentPrefix: this.配置.文档前缀,
+      queryPrefix: this.配置.查询前缀,
+    }
+  }
+
   public async 获取参考文本(输入: 参考输入): Promise<string> {
     if (输入.写作任务.trim().length === 0) throw new Error('写作任务不能为空')
     let 片段们 = 输入.作者.文章.flatMap((文章) => 切分句子(文章.正文))
