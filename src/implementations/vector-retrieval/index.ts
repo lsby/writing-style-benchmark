@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { 检查API配置 } from '../../engine/execution/model.js'
 import { 参考实现, type 参考输入 } from '../base.js'
+import { 切分句子, type 句子片段 } from '../sentence.js'
 
 export type 向量检索配置 = {
   地址: string
@@ -13,37 +14,11 @@ export type 向量检索配置 = {
   查询前缀: string
 }
 
-type 片段 = { 正文: string }
-type 已编码片段 = 片段 & { 向量: number[] }
+type 已编码片段 = 句子片段 & { 向量: number[] }
 
 let 向量响应格式 = z.object({
   data: z.array(z.object({ index: z.number().int().nonnegative(), embedding: z.array(z.number().finite()).min(1) })),
 })
-
-function 切分句子(正文: string): 片段[] {
-  let 字符们 = [...正文]
-  let 结果: 片段[] = []
-  let 起点 = 0
-  for (let 索引 = 0; 索引 < 字符们.length; 索引++) {
-    let 字符 = 字符们[索引]
-    if (字符 !== '。' && 字符 !== '.') continue
-    if (字符 === '.') {
-      // 连续英文点属于省略号；数字之间的点保留为小数点。
-      if (字符们[索引 - 1] === '.' || 字符们[索引 + 1] === '.') continue
-      if (/\d/u.test(字符们[索引 - 1] ?? '') && /\d/u.test(字符们[索引 + 1] ?? '')) continue
-    }
-    while (字符们[索引 + 1] === '。' || /[”’」』）】"']/u.test(字符们[索引 + 1] ?? '')) 索引++
-    let 句子 = 字符们
-      .slice(起点, 索引 + 1)
-      .join('')
-      .trim()
-    if (句子.length > 0) 结果.push({ 正文: 句子 })
-    起点 = 索引 + 1
-  }
-  let 末句 = 字符们.slice(起点).join('').trim()
-  if (末句.length > 0) 结果.push({ 正文: 末句 })
-  return 结果
-}
 
 function 归一化向量(向量: number[]): number[] {
   let 最大值 = 向量.reduce((最大, 值) => Math.max(最大, Math.abs(值)), 0)
@@ -124,7 +99,7 @@ export class 向量检索实现 extends 参考实现 {
       .join('\n\n')
   }
 
-  private async 编码片段(片段们: 片段[]): Promise<已编码片段[]> {
+  private async 编码片段(片段们: 句子片段[]): Promise<已编码片段[]> {
     let 结果: 已编码片段[] = []
     let 维度: number | undefined
     for (let 起点 = 0; 起点 < 片段们.length; 起点 += this.配置.批量大小) {
