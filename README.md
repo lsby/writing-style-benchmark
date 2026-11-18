@@ -1,6 +1,6 @@
 # Writing Style Benchmark
 
-用真人文章比较 AI 的文风生成方案。包含六位作者的 54 篇选文、12 道题及评分标准，不预先总结作者人设。
+用真人文章比较 AI 的文风生成方案。包含六位作者的 54 篇选文、15 道题及评分标准，不预先总结作者人设。
 
 API 引擎顺序执行：实现返回参考文本 → 引擎组织消息 → 答题 API → 评分 API → 直接保存单题基线。答题和评分分别配置服务地址、模型、密钥和参数。
 
@@ -17,11 +17,13 @@ pnpm exec tsx src/run.ts
 
 自定义实现和完整 TS 用法见 [框架说明](docs/framework.md)。源码分为 `questions/`、`engine/`、`implementations/`，标识符中文、文件路径英文。作者资料只有姓名和文章（标题、正文），实现只返回参考文本，API 引擎负责组织模型消息。
 
-智能体可通过 `pnpm mcp` 启动的 MCP 服务调用同一份实现：`list_implementations` 列出方案，`get_reference` 按实现名、作者和写作任务返回参考文本。MCP 不调用模型或保存结果，详见 [MCP 说明](docs/mcp.md)。
+智能体可通过 `pnpm mcp` 启动的 MCP 服务调用同一份实现：`list_implementations` 列出方案，`get_reference` 按实现名、作者和写作任务返回参考文本。通过 `start_writing` 开始作答，并用 `save_result` 保存到固定的 `baselines/`；MCP 不调用模型或评分，详见 [MCP 说明](docs/mcp.md)。
 
 结果直接保存为 `baselines/<UNIX毫秒时间戳>/`，包含 `question.json`、`reference.txt`、`output.txt`、`evaluation.json`、`metadata.json`。`reference.txt` 是实现函数实际返回的参考文本，`output.txt` 是模型最终正文；作者、实现、API 配置和消耗都在元信息中。不额外复制原文目录，旧结果不自动回写。
 
 题目直接定义在 [src/questions/](src/questions/)，评价标准内联在 [裁判提示词](src/engine/evaluation/scoring.ts)中。API 路径目前逐题评分，不自动运行整组多样性评价。
+
+技术文档题 W09～W11 分别要求编写命令行使用说明、异步任务接口接入文档和队列积压排查手册。每题附完整的虚构技术规格，用来观察作者文风在准确性、操作步骤和异常处理约束下的表现；沿用 `article` 类型和评分字段。入口已选入这三题，分别使用朱光潜和张爱玲的原文作参考。
 
 开发使用 Node.js 24、pnpm 9、TypeScript 与 tsx，规范见 [AGENTS.md](AGENTS.md)。
 

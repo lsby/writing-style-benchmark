@@ -2,9 +2,12 @@ import { Client, type CallToolResult } from '@modelcontextprotocol/client'
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio'
 import { InMemoryTransport } from '@modelcontextprotocol/server'
 import assert from 'node:assert/strict'
+import { cp, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { z } from 'zod'
 import { 作者 as 作者枚举 } from '../src/engine/data/authors.js'
 import { 加载数据集 } from '../src/engine/data/dataset.js'
 import { 作者目录 } from '../src/engine/data/paths.js'
@@ -20,7 +23,7 @@ function 读取文本(结果: CallToolResult): string {
   return 内容.text
 }
 
-await test('真实 stdio 仅提供两个只读工具，按作者原名或标识返回全文参考，拒绝无效请求', async () => {
+await test('真实 stdio 提供参考和保存工具，按作者原名或标识返回全文参考，拒绝无效请求', async () => {
   let 客户端 = new Client({ name: 'reference-test', version: '' })
   let 传输 = new StdioClientTransport({
     command: process.execPath,
@@ -30,8 +33,22 @@ await test('真实 stdio 仅提供两个只读工具，按作者原名或标识�
   try {
     await 客户端.connect(传输)
     let { tools: 工具们 } = await 客户端.listTools()
-    assert.deepEqual(工具们.map((工具) => 工具.name).sort(), ['get_reference', 'list_implementations'])
-    assert.ok(工具们.every((工具) => 工具.annotations?.readOnlyHint === true))
+    assert.deepEqual(工具们.map((工具) => 工具.name).sort(), [
+      'get_reference',
+      'list_implementations',
+      'save_result',
+      'start_writing',
+    ])
+    assert.ok(
+      工具们
+        .filter((工具) => ['get_reference', 'list_implementations'].includes(工具.name))
+        .every((工具) => 工具.annotations?.readOnlyHint === true),
+    )
+    assert.ok(
+      工具们
+        .filter((工具) => ['save_result', 'start_writing'].includes(工具.name))
+        .every((工具) => 工具.annotations?.readOnlyHint === false),
+    )
     let 列表 = await 客户端.callTool({ name: 'list_implementations', arguments: {} })
     assert.deepEqual(
       JSON.parse(读取文本(列表)),
@@ -85,7 +102,9 @@ class 异步参考实现 extends 参考实现 {
 await test('自定义异步实现收到当前任务、文本原样返回，作者资料按调用隔离，重复实现名直接报错', async () => {
   let 实现 = new 异步参考实现()
   await assert.rejects(创建参考服务([实现, 实现], 仓库目录), /重复参考实现/)
-  let 服务 = await 创建参考服务([实现], 仓库目录)
+  let 临时目录 = await mkdtemp(path.join(tmpdir(), 'writing-mcp-'))
+  await cp(path.join(仓库目录, 'data'), path.join(临时目录, 'data'), { recursive: true })
+  let 服务 = await 创建参考服务([实现], 临时目录)
   let 客户端 = new Client({ name: 'custom-reference-test', version: '' })
   let [客户端传输, 服务端传输] = InMemoryTransport.createLinkedPair()
   try {
@@ -104,8 +123,39 @@ await test('自定义异步实现收到当前任务、文本原样返回，作�
       ['第一项任务', '第二项任务'],
     )
     assert.ok(实现.调用们.every((输入) => 输入.作者.姓名 === '朱光潜' && 输入.作者.文章.length > 0))
+    let question = { id: 'W01', title: '测试', kind: 'article', input: '写作要求', min: 2, max: 3 }
+    let 开始 = await 客户端.callTool({
+      name: 'start_writing',
+      arguments: { implementation: 实现.名称, author: 'zhu-guangqian', question },
+    })
+    assert.ok(开始.isError !== true)
+    let { run_id, reference } = z
+      .object({ run_id: z.string(), reference: z.string() })
+      .parse(JSON.parse(读取文本(开始)))
+    assert.equal(reference, '  自定义参考文本\n{"原样":true}\n')
+    let 保存 = await 客户端.callTool({ name: 'save_result', arguments: { run_id, output: '标题\n正文过长了' } })
+    assert.ok(保存.isError !== true)
+    let { directory, checks } = z
+      .object({ directory: z.string(), checks: z.object({ passed: z.boolean() }) })
+      .parse(JSON.parse(读取文本(保存)))
+    assert.equal(checks.passed, false)
+    assert.equal(await readFile(path.join(临时目录, directory, 'reference.txt'), 'utf8'), reference)
+    assert.equal(await readFile(path.join(临时目录, directory, 'output.txt'), 'utf8'), '标题\n正文过长了')
+    assert.deepEqual(JSON.parse(await readFile(path.join(临时目录, directory, 'question.json'), 'utf8')), question)
+    assert.equal(JSON.parse(await readFile(path.join(临时目录, directory, 'evaluation.json'), 'utf8')), null)
+    let 元信息 = z
+      .object({ source: z.string(), writer: z.null(), judge: z.null() })
+      .parse(JSON.parse(await readFile(path.join(临时目录, directory, 'metadata.json'), 'utf8')))
+    assert.equal(元信息.source, 'mcp')
+    assert.equal(元信息.writer, null)
+    assert.equal(元信息.judge, null)
+    assert.equal(
+      (await 客户端.callTool({ name: 'save_result', arguments: { run_id, output: '重复提交' } })).isError,
+      true,
+    )
   } finally {
     await 客户端.close()
     await 服务.close()
+    await rm(临时目录, { recursive: true, force: true })
   }
 })

@@ -1,10 +1,13 @@
 import { 作者, 全文实现, 测试引擎 } from './engine/index.js'
 import 题目_等待 from './questions/article/W01.js'
+import 题目_命令行说明 from './questions/article/W09.js'
+import 题目_接口接入 from './questions/article/W10.js'
+import 题目_故障排查 from './questions/article/W11.js'
 
 // 在这里明确填写两份 API 配置。无需认证的服务将密钥显式设为空字符串。
 let 引擎 = new 测试引擎({
   作者: [作者.朱光潜, 作者.张爱玲],
-  题目: [题目_等待],
+  题目: [题目_等待, 题目_命令行说明, 题目_接口接入, 题目_故障排查],
   实现: new 全文实现(),
   答题API: {
     地址: 'http://127.0.0.1:11434',
