@@ -4,15 +4,16 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
-import { 可用实现, type 参考实现 } from '../implementations/index.js'
+import type { 参考实现 } from '../implementations/base.js'
 import { 写作题目 } from '../questions/question.js'
 import { 加载数据集 } from './data/dataset.js'
 import { 作者目录 } from './data/paths.js'
 
 export async function 创建参考服务(
-  实现们: readonly 参考实现[] = 可用实现,
+  实现们: readonly 参考实现[],
   仓库目录: string = fileURLToPath(new URL('../../', import.meta.url)),
 ): Promise<McpServer> {
+  if (实现们.length === 0) throw new Error('至少需要一个参考实现')
   let 注册实现 = [...实现们]
   let 已见名称 = new Set<string>()
   for (let 实现 of 注册实现) {

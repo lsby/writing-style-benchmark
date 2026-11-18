@@ -13,7 +13,7 @@ MCP 和 API 使用同一个 `参考实现.获取参考文本({ 作者, 写作任
 
 ```json
 {
-  "implementation": "full-context",
+  "implementation": "vector-retrieval",
   "author": "zhu-guangqian",
   "question": { "id": "W01", "title": "题目", "kind": "article", "input": "写作要求", "min": 200, "max": 400 }
 }
@@ -23,9 +23,17 @@ MCP 和 API 使用同一个 `参考实现.获取参考文本({ 作者, 写作任
 
 服务端固定分配 `baselines/<UNIX毫秒时间戳>/`，调用方不能指定路径；保存题目、本次实际参考、正文、空评分和元信息五个文件。元信息的 `source` 为 `mcp`，`writer` 和 `judge` 为 `null`。未提交的写作任务只保存在服务进程内，服务重启后丢失，需重新开始。目录同名时保存失败，不覆盖已有文件。
 
-`implementation` 必须显式选择列表中的名称。`author` 可用作者原名或 `data/author-slugs.json` 中的标识。旧 `get_reference` 仍按实现、作者和 `task` 返回文本，不创建写作任务。内置 `full-context` 实现返回该作者的全部参考文章。
+`implementation` 必须填写当前服务列出的名称。每个实现的 MCP 入口只发布该实现：全文入口提供 `full-context`，向量入口提供 `vector-retrieval`。`author` 可用作者原名或 `data/author-slugs.json` 中的标识。旧 `get_reference` 仍按实现、作者和 `task` 返回文本，不创建写作任务。全文方案返回该作者的全部参考文章；向量方案返回与任务最相似的 N 个原句。向量模型参数在 `src/implementations/vector-retrieval/mcp.ts` 中填写，详见[向量检索方案](framework.md#向量检索方案)。列举实现不会请求向量模型，仅选用向量方案取参考时请求。
 
-新增实现时，继承 `src/implementations/base.ts` 的 `参考实现`，提供唯一的 `名称`、`说明` 和 `获取参考文本`，再把实例加入 `src/implementations/index.ts` 的 `可用实现` 数组。两个入口共用这份实现；MCP 列举和调用均使用这份数组。
+新增实现时，继承 `src/implementations/base.ts` 的 `参考实现`，提供唯一的 `名称`、`说明` 和 `获取参考文本`。该实现目录必须同时提供 `run.ts` 和 `mcp.ts`：前者的运行入口类继承 `基准运行入口`，后者的 MCP 入口类继承 `MCP运行入口`。入口类保存自身配置，公共启动流程留在基类；普通导入不会启动任务。顶层 `src/mcp.ts` 只需选择并显式启动一个入口类：
+
+```ts
+import { 向量MCP入口 } from './implementations/vector-retrieval/mcp.js'
+
+await new 向量MCP入口().启动()
+```
+
+换用全文方案时，将导入改成 `full-context/mcp.js` 的 `全文MCP入口`。也可将客户端启动脚本指向自行编写的同类调用脚本，无须维护中央注册表。API 和 MCP 共用参考实现代码，参数分别放在各自入口类中。
 
 ## 连接
 

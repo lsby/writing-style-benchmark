@@ -1,5 +1,3 @@
-import { serveStdio } from '@modelcontextprotocol/server/stdio'
-import { 创建参考服务 } from './engine/mcp.js'
+import { 向量MCP入口 } from './implementations/vector-retrieval/mcp.js'
 
-let 服务 = await 创建参考服务()
-serveStdio(() => 服务)
+await new 向量MCP入口().启动()
