@@ -5,20 +5,18 @@ import 题目_命令行说明 from '../../questions/article/W09.js'
 import 题目_接口接入 from '../../questions/article/W10.js'
 import 题目_故障排查 from '../../questions/article/W11.js'
 import { 基准运行入口 } from '../base.js'
-import { 向量检索实现 } from './index.js'
+import { 向量检索实现, 默认向量缓存目录 } from './index.js'
 
 /** 向量运行入口包含该方案的基准配置，并支持执行完整基准。 */
 export class 向量运行入口 extends 基准运行入口 {
   protected 创建配置(): 引擎配置 {
     let 实现 = new 向量检索实现({
-      地址: 'http://127.0.0.1:11434', // 本地向量服务，与答题、评分 API 独立。
-      模型: 'text-embedding-nomic-embed-text-v1.5@q8_0',
-      密钥: '', // 无需认证时明确留空。
+      类型: '本地',
+      模型: 'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
+      精度: 'fp32',
+      缓存目录: 默认向量缓存目录,
       检索数量: 30, // 返回最相似的 N 句原文。
       批量大小: 32, // 每次编码的原句数量。
-      超时毫秒: 30 * 60_000,
-      文档前缀: 'search_document: ', // 按向量模型的要求填写，模型不需要前缀时留空。
-      查询前缀: 'search_query: ',
     })
 
     return {

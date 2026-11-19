@@ -23,6 +23,7 @@
     ]
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@modelcontextprotocol/server": "2.4.0",
     "csv-parse": "^6.1.0",
     "zod": "^4.1.0"
