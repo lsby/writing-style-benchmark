@@ -6,6 +6,7 @@ export let 作者 = {
   钱钟书: '钱钟书',
   汪曾祺: '汪曾祺',
   老舍: '老舍',
+  维特根斯坦: '维特根斯坦',
 } as const
 
 export type 作者姓名 = (typeof 作者)[keyof typeof 作者]

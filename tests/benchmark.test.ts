@@ -14,7 +14,7 @@ await test('作者资料只含姓名和分篇文章，写作与评分各自组�
   assert.deepEqual(资料集.authors.map((项) => 项.姓名).sort(), Object.values(作者枚举).sort())
   assert.equal(
     资料集.authors.reduce((数量, 作者) => 数量 + 作者.文章.length, 0),
-    54,
+    55,
   )
   for (let 作者资料 of 资料集.authors) {
     assert.deepEqual(Object.keys(作者资料).sort(), ['姓名', '文章'])
