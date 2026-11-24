@@ -1,5 +1,4 @@
 import { 作者 } from '../../engine/data/authors.js'
-import type { 引擎配置 } from '../../engine/engine.js'
 import 题目_等待 from '../../questions/article/W01.js'
 import 题目_命令行说明 from '../../questions/article/W09.js'
 import 题目_接口接入 from '../../questions/article/W10.js'
@@ -9,10 +8,10 @@ import { 随机抽句实现 } from './index.js'
 
 /** 随机抽句运行入口包含该方案的基准配置，并支持执行完整基准。 */
 export class 随机抽句运行入口 extends 基准运行入口 {
-  protected 创建配置(): 引擎配置 {
+  public constructor() {
     let 实现 = new 随机抽句实现({ 抽取数量: 30, 随机种子: 42 })
 
-    return {
+    super({
       作者: [作者.朱光潜, 作者.张爱玲],
       题目: [题目_等待, 题目_命令行说明, 题目_接口接入, 题目_故障排查],
       实现,
@@ -30,6 +29,6 @@ export class 随机抽句运行入口 extends 基准运行入口 {
         参数: { temperature: 0, max_tokens: 4096, seed: 42, reasoning_effort: 'low' },
         超时毫秒: 1_800_000,
       },
-    }
+    })
   }
 }

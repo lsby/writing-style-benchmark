@@ -29,8 +29,4 @@ export class 场景适配实现 extends 参考实现 {
   public 获取参考文本(): string {
     return '无参考。\n\n表达与当前场景不协调，会让文字显得生硬、违和。请根据当前任务，让回答的表达方式符合当前交流场景。直接输出最终内容，不附分析或创作说明。'
   }
-
-  public override 导出配置(): Record<string, unknown> {
-    return { 场景提示: this.获取参考文本() }
-  }
 }

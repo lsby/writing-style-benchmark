@@ -19,8 +19,4 @@ export class 纯题目实现 extends 参考实现 {
   public 获取参考文本(): string {
     return '无参考。'
   }
-
-  public override 导出配置(): Record<string, unknown> {
-    return {}
-  }
 }

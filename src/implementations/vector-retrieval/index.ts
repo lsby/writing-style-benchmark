@@ -116,7 +116,7 @@ function 归一化向量(向量: number[]): number[] {
 export class 向量检索实现 extends 参考实现 {
   public readonly 名称 = 'vector-retrieval'
   public readonly 说明 = '原文按句号切分，按写作任务检索相关句子，只返回原句。'
-  private readonly 配置: 向量检索配置
+  public readonly 配置: 向量检索配置
   private readonly 作者缓存 = new Map<string, Promise<已编码片段[]>>()
   private 本地提取器: Promise<FeatureExtractionPipeline> | undefined
 
@@ -126,32 +126,6 @@ export class 向量检索实现 extends 参考实现 {
     if (已校验配置.类型 === '在线') 检查API配置(已校验配置, '向量检索')
     else 已校验配置.缓存目录 = path.resolve(已校验配置.缓存目录)
     this.配置 = 已校验配置
-  }
-
-  public override 导出配置(): Record<string, unknown> {
-    let 公共配置 = {
-      type: this.配置.类型 === '本地' ? 'local' : 'online',
-      model: this.配置.模型,
-      retrievalCount: this.配置.检索数量,
-      batchSize: this.配置.批量大小,
-    }
-    if (this.配置.类型 === '本地')
-      return {
-        ...公共配置,
-        dtype: this.配置.精度,
-        device: 'cpu',
-        pooling: 'mean',
-        normalize: true,
-        cacheDirectory: this.配置.缓存目录,
-        longTextStrategy: 'token-weighted-mean',
-      }
-    return {
-      ...公共配置,
-      address: this.配置.地址,
-      timeoutMs: this.配置.超时毫秒,
-      documentPrefix: this.配置.文档前缀,
-      queryPrefix: this.配置.查询前缀,
-    }
   }
 
   public async 获取参考文本(输入: 参考输入): Promise<string> {

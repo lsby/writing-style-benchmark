@@ -15,7 +15,7 @@ export type 复现信息 = {
   code: { commit: string | null; dirty: boolean | null; sha256: string }
   datasetSha256: string
   scoringSourceSha256: string
-  implementationConfig: Record<string, unknown> | null
+  implementationConfig: unknown
 }
 
 export function 计算指纹(内容: unknown): string {
@@ -69,6 +69,6 @@ export async function 收集复现信息(数据: 数据集, 实现: 参考实现
     code: 代码,
     datasetSha256: 计算指纹(数据),
     scoringSourceSha256: createHash('sha256').update(评分源码).digest('hex'),
-    implementationConfig: structuredClone(实现.导出配置()),
+    implementationConfig: structuredClone(实现.配置 ?? null),
   }
 }

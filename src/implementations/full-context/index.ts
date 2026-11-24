@@ -25,8 +25,4 @@ export class 全文实现 extends 参考实现 {
     let 原文 = 输入.作者.文章.map((文章) => `${文章.标题}\n${文章.正文}`).join('\n\n')
     return 原文
   }
-
-  public override 导出配置(): Record<string, unknown> {
-    return {}
-  }
 }

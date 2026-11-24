@@ -12,41 +12,37 @@ export function 构造参考文本(原文: string): string {
 export abstract class 参考实现 {
   public abstract readonly 名称: string
   public abstract readonly 说明: string
+  public readonly 配置?: unknown
   public abstract 获取参考文本(输入: 参考输入): string | Promise<string>
-
-  /** 自定义实现需覆盖此方法，显式导出可公开的配置；null 表示尚未提供。 */
-  public 导出配置(): Record<string, unknown> | null {
-    return null
-  }
 }
 
 /**
  * 基准运行入口代表一种参测方案的独立启动方式。
- * 具体入口提供所需的实现、题目、作者和模型配置，并由它统一执行基准。
+ * 具体入口在构造时注入引擎配置，并由它统一执行基准。
  */
 export abstract class 基准运行入口 {
-  protected abstract 创建配置(): 引擎配置
+  protected constructor(private readonly 配置: 引擎配置) {}
 
   public async 运行(): Promise<void> {
     let { 测试引擎 } = await import('../engine/engine.js')
-    let 引擎 = new 测试引擎(this.创建配置())
+    let 引擎 = new 测试引擎(this.配置)
     console.log(await 引擎.运行())
   }
 }
 
 /**
  * MCP运行入口代表一种参测方案的 MCP 服务启动方式。
- * 具体入口提供配置好的参考实现，由它创建服务并通过标准输入输出发布。
+ * 具体入口在构造时注入参考实现，由它创建服务并通过标准输入输出发布。
  */
 export abstract class MCP运行入口 {
-  protected abstract 创建实现(): 参考实现
+  protected constructor(private readonly 实现: 参考实现) {}
 
   public async 启动(): Promise<void> {
     let [{ 创建参考服务 }, { serveStdio }] = await Promise.all([
       import('../engine/mcp.js'),
       import('@modelcontextprotocol/server/stdio'),
     ])
-    let 服务 = await 创建参考服务([this.创建实现()])
+    let 服务 = await 创建参考服务([this.实现])
     serveStdio(() => 服务)
   }
 }

@@ -30,16 +30,12 @@ function 创建随机数生成器(种子?: number): () => number {
 export class 随机抽句实现 extends 参考实现 {
   public readonly 名称 = 'random-sentences'
   public readonly 说明 = '原文按句号切分，随机抽取若干原句作为风格参考，只返回原句。'
-  private readonly 配置: 随机抽句配置
+  public readonly 配置: 随机抽句配置
 
   public constructor(配置: 随机抽句配置) {
     super()
     this.配置 = 配置格式.parse(配置)
     this.配置.随机种子 ??= randomInt(0, 4_294_967_296)
-  }
-
-  public override 导出配置(): Record<string, unknown> {
-    return { sampleCount: this.配置.抽取数量, seed: this.配置.随机种子 }
   }
 
   public 获取参考文本(输入: 参考输入): string {
