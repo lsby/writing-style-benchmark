@@ -58,7 +58,7 @@ export async function 创建参考服务(
         return { isError: true, content: [{ type: 'text', text: `未知参考实现：${implementation}` }] }
       let 作者 = 数据.authors.find((候选) => 候选.姓名 === author || 作者目录(候选.姓名) === author)
       if (作者 === undefined) return { isError: true, content: [{ type: 'text', text: `未知作者：${author}` }] }
-      let 参考文本 = 构造参考文本(作者.姓名, await 实现.获取参考文本({ 作者: structuredClone(作者), 写作任务: task }))
+      let 参考文本 = 构造参考文本(await 实现.获取参考文本({ 作者: structuredClone(作者), 写作任务: task }))
       return { content: [{ type: 'text', text: 参考文本 }] }
     },
   )
@@ -95,7 +95,7 @@ export async function 创建参考服务(
         最多字数: question.max,
       })
       let 复现 = await 收集复现信息(数据, 实现)
-      let 参考 = 构造参考文本(作者.姓名, await 实现.获取参考文本(题目.出题(作者)))
+      let 参考 = 构造参考文本(await 实现.获取参考文本(题目.出题(作者)))
       let run_id = randomUUID()
       待提交.set(run_id, { 题目, 作者: 作者.姓名, 实现: 实现.名称, 参考, 复现, 提交中: false })
       return { content: [{ type: 'text', text: JSON.stringify({ run_id, reference: 参考 }) }] }

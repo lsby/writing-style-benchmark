@@ -123,7 +123,7 @@ await test('API 顺序作答评分并直接生成独立基线，两份 API 配�
     assert.ok(用户消息 !== undefined)
     assert.equal(用户消息.content.includes('独有参考片段：纸页边缘的一点光。'), true)
     assert.equal(用户消息.content.includes(题.导出().input), true)
-    assert.equal(用户消息.content.split('参考作者：朱光潜').length - 1, 1)
+    assert.equal(用户消息.content.includes('朱光潜'), false)
     assert.equal(JSON.stringify(评分请求.body.messages).includes('独有参考片段'), false)
     assert.ok(JSON.stringify(评分请求.body.messages).includes('书页里的光'))
     assert.equal(await readFile(path.join(项.目录, 'output.txt'), 'utf8'), '题目\n书页里的光慢慢落下来。')
@@ -132,7 +132,7 @@ await test('API 顺序作答评分并直接生成独立基线，两份 API 配�
     assert.deepEqual((await readdir(项.目录)).sort(), 文件们)
     assert.equal(
       await readFile(path.join(项.目录, 'reference.txt'), 'utf8'),
-      构造参考文本('朱光潜', ' \n独有参考片段：纸页边缘的一点光。 \n'),
+      构造参考文本(' \n独有参考片段：纸页边缘的一点光。 \n'),
     )
     assert.deepEqual(JSON.parse(await readFile(path.join(项.目录, 'question.json'), 'utf8')), 题.导出())
     let 调用格式 = z.object({
@@ -214,7 +214,7 @@ await test('API 顺序作答评分并直接生成独立基线，两份 API 配�
     assert.ok(失败项 !== undefined)
     assert.equal(await readFile(path.join(失败目录, 失败项, 'output.txt'), 'utf8'), '题目\n书页里的光慢慢落下来。')
     assert.deepEqual((await readdir(path.join(失败目录, 失败项))).sort(), 文件们)
-    assert.ok((await readFile(path.join(失败目录, 失败项, 'reference.txt'), 'utf8')).includes('参考作者：朱光潜'))
+    assert.equal((await readFile(path.join(失败目录, 失败项, 'reference.txt'), 'utf8')).includes('参考作者：'), false)
     assert.equal(JSON.parse(await readFile(path.join(失败目录, 失败项, 'evaluation.json'), 'utf8')), null)
     let 失败信息 = z
       .object({

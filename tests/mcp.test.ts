@@ -85,7 +85,7 @@ await test('真实 stdio 提供参考和保存工具，按作者原名或标识�
     let 作者 = 数据.authors.find((候选) => 候选.姓名 === '朱光潜')
     assert.ok(作者 !== undefined)
     let task = '写一篇有关读书的短文。'
-    let 预期 = 构造参考文本(作者.姓名, 实现.获取参考文本({ 作者, 写作任务: task }))
+    let 预期 = 构造参考文本(实现.获取参考文本({ 作者, 写作任务: task }))
     for (let author of [作者.姓名, 作者目录(作者.姓名)]) {
       let 结果 = await 客户端.callTool({
         name: 'get_reference',
@@ -169,7 +169,7 @@ await test('自定义异步实现收到当前任务、文本原样返回，作�
         arguments: { implementation: 实现.名称, author: 'zhu-guangqian', task },
       })
       assert.ok(结果.isError !== true)
-      assert.equal(读取文本(结果), 构造参考文本('朱光潜', '  自定义参考文本\n{"原样":true}\n'))
+      assert.equal(读取文本(结果), 构造参考文本('  自定义参考文本\n{"原样":true}\n'))
     }
     assert.deepEqual(
       实现.调用们.map((输入) => 输入.写作任务),
@@ -185,7 +185,9 @@ await test('自定义异步实现收到当前任务、文本原样返回，作�
     let { run_id, reference } = z
       .object({ run_id: z.string(), reference: z.string() })
       .parse(JSON.parse(读取文本(开始)))
-    assert.equal(reference, 构造参考文本('朱光潜', '  自定义参考文本\n{"原样":true}\n'))
+    assert.equal(reference, 构造参考文本('  自定义参考文本\n{"原样":true}\n'))
+    assert.equal(reference.includes('朱光潜'), false)
+    assert.equal(reference.includes('zhu-guangqian'), false)
     let 保存 = await 客户端.callTool({ name: 'save_result', arguments: { run_id, output: '标题\n正文过长了' } })
     assert.ok(保存.isError !== true)
     let { directory, checks } = z

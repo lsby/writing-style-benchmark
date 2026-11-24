@@ -26,16 +26,28 @@ await test('作者资料只含姓名和分篇文章，写作与评分各自组�
   let 作者 = 资料集.authors[0]
   assert.ok(作者 !== undefined)
   let 题目 = 等待题.导出()
-  let 参考文本 = 构造参考文本(作者.姓名, new 全文实现().获取参考文本(等待题.出题(作者)))
+  let 参考文本 = 构造参考文本(new 全文实现().获取参考文本(等待题.出题(作者)))
   assert.equal(typeof 参考文本, 'string')
   assert.equal(参考文本.includes(题目.input), false)
-  assert.ok(参考文本.includes(作者.姓名))
+  assert.equal(参考文本.startsWith('参考文本：'), true)
+  assert.equal(参考文本.includes('参考作者：'), false)
   for (let 文章 of 作者.文章) {
     assert.ok(参考文本.includes(文章.标题) && 参考文本.includes(文章.正文))
   }
   let 评审消息 = 构造评分消息(作者, 题目, '唯一待评正文', 6, 'stop')
   assert.equal(评审消息.filter((消息) => 消息.role === 'system').length, 1)
   let 评审文本 = 评审消息.map((消息) => 消息.content).join('\n')
+  assert.equal(评审文本.includes('参考作者：'), false)
+  assert.deepEqual(
+    构造评分消息(
+      { ...作者, 姓名: 作者.姓名 === 作者枚举.鲁迅 ? 作者枚举.朱光潜 : 作者枚举.鲁迅 },
+      题目,
+      '唯一待评正文',
+      6,
+      'stop',
+    ),
+    评审消息,
+  )
   for (let 标准 of [
     '# 评分标准',
     '## 1. 作者风格贴近程度',

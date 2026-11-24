@@ -3,9 +3,9 @@ import type { 引擎配置 } from '../engine/engine.js'
 
 export type 参考输入 = { 作者: 作者资料; 写作任务: string }
 
-/** API 和 MCP 共用作者提示，参测实现只负责组织参考原文。 */
-export function 构造参考文本(作者姓名: string, 原文: string): string {
-  return `参考作者：${作者姓名}\n\n参考文章（仅作为写作参考）：\n\n${原文}`
+/** API、MCP 和评分共用资料说明，不附加作者身份。 */
+export function 构造参考文本(原文: string): string {
+  return `参考文本：\n\n${原文}`
 }
 
 /** 参测方案提供参考文本，模型消息由调用方组织。 */
